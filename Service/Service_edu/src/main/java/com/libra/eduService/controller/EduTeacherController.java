@@ -86,7 +86,6 @@ public class EduTeacherController {
 
         //调用方法实现条件查询分页
         eduTeacherService.page(pageTeacher,wrapper);
-
         Integer count = Math.toIntExact(pageTeacher.getTotal());//总记录数
         List<EduTeacher> records = pageTeacher.getRecords(); //数据list集合
         return ResultVOUtil.success(records,count);

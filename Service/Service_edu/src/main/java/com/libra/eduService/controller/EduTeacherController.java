@@ -40,7 +40,7 @@ public class EduTeacherController {
        if (flag){
            return ResultVOUtil.success();
        }else {
-           return ResultVOUtil.error(flag);
+           return ResultVOUtil.error("删除失败");
        }
     }
 
@@ -99,6 +99,26 @@ public class EduTeacherController {
             return ResultVOUtil.success();
         }else {
             return ResultVOUtil.error("添加失败");
+        }
+    }
+
+    @GetMapping("get/{id}")
+    public ResultVO getTeacher(@PathVariable String id){
+        EduTeacher eduTeacher = eduTeacherService.getById(id);
+        if (eduTeacher != null){
+            return ResultVOUtil.success(eduTeacher);
+        }else {
+            return ResultVOUtil.error("查询不到信息");
+        }
+    }
+
+    @PutMapping("update")
+    public ResultVO updateTeacher(@RequestBody EduTeacher eduTeacher){
+        boolean flag = eduTeacherService.updateById(eduTeacher);
+        if (flag){
+            return ResultVOUtil.success();
+        }else {
+            return ResultVOUtil.error("修改失败");
         }
     }
 }

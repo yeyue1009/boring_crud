@@ -4,11 +4,17 @@ package com.libra.eduService.controller;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.libra.eduService.common.Exception.GuliException;
 import com.libra.eduService.common.dto.TeacherDTO;
+import com.libra.eduService.common.utils.R;
 import com.libra.eduService.common.utils.ResultVOUtil;
 import com.libra.eduService.common.vo.ResultVO;
 import com.libra.eduService.entity.EduTeacher;
+import com.libra.eduService.entity.vo.TeacherQuery;
 import com.libra.eduService.service.EduTeacherService;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -24,40 +30,73 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/eduService/edu-teacher")
+@CrossOrigin(allowCredentials = "true", allowedHeaders = "*")
 public class EduTeacherController {
 
-    @Resource
-    private EduTeacherService eduTeacherService;
+    //访问地址： http://localhost:8001/eduservice/teacher/findAll
+    //把service注入
+    @Autowired
+    private EduTeacherService teacherService;
 
+    //1 查询讲师表所有数据
+    //rest风格
+    @ApiOperation(value = "所有讲师列表")
     @GetMapping("findAll")
-    public ResultVO list(){
-        return ResultVOUtil.success(eduTeacherService.list(null));
+    public R findAllTeacher() {
+        //调用service的方法实现查询所有的操作
+        List<EduTeacher> list = teacherService.list(null);
+        return R.ok().data("items",list);
     }
 
+    //2 逻辑删除讲师的方法
+    @ApiOperation(value = "逻辑删除讲师")
     @DeleteMapping("{id}")
-    public ResultVO removeTeacher(@PathVariable String id){
-       boolean flag = eduTeacherService.removeById(id);
-       if (flag){
-           return ResultVOUtil.success();
-       }else {
-           return ResultVOUtil.error("删除失败");
-       }
+    public R removeTeacher(@ApiParam(name = "id", value = "讲师ID", required = true)
+                           @PathVariable String id) {
+        boolean flag = teacherService.removeById(id);
+        if(flag) {
+            return R.ok();
+        } else {
+            return R.error();
+        }
     }
 
-    @GetMapping("page/{current}/{limit}")
-    public ResultVO pageListTeacher(@PathVariable Long current,
-                                    @PathVariable Long limit){
-        Page<EduTeacher> page = new Page<>(current,limit);
-        eduTeacherService.page(page,null);
-        Integer count = Math.toIntExact(page.getSize());
-        List<EduTeacher> teacherList = page.getRecords();
-        return ResultVOUtil.success(teacherList,count);
+    //3 分页查询讲师的方法
+    //current 当前页
+    //limit 每页记录数
+    @GetMapping("pageTeacher/{current}/{limit}")
+    public R pageListTeacher(@PathVariable long current,
+                             @PathVariable long limit) {
+        //创建page对象
+        Page<EduTeacher> pageTeacher = new Page<>(current,limit);
 
+        try {
+            int i = 10/0;
+        }catch(Exception e) {
+            //执行自定义异常
+            throw new GuliException(20001,"执行了自定义异常处理....");
+        }
+
+
+        //调用方法实现分页
+        //调用方法时候，底层封装，把分页所有数据封装到pageTeacher对象里面
+        teacherService.page(pageTeacher,null);
+
+        long total = pageTeacher.getTotal();//总记录数
+        List<EduTeacher> records = pageTeacher.getRecords(); //数据list集合
+
+//        Map map = new HashMap();
+//        map.put("total",total);
+//        map.put("rows",records);
+//        return R.ok().data(map);
+
+        return R.ok().data("total",total).data("rows",records);
     }
 
+    //4 条件查询带分页的方法
     @PostMapping("pageTeacherCondition/{current}/{limit}")
-    public ResultVO pageTeacherCondition(@PathVariable long current,@PathVariable long limit,
-                                  @RequestBody(required = false) TeacherDTO teacherQuery) {
+    public R pageTeacherCondition(@PathVariable long current,@PathVariable long limit,
+                                  @RequestBody(required = false) TeacherQuery teacherQuery) {
         //创建page对象
         Page<EduTeacher> pageTeacher = new Page<>(current,limit);
 
@@ -74,7 +113,7 @@ public class EduTeacherController {
             //构建条件
             wrapper.like("name",name);
         }
-        if(level != null ) {
+        if(level != null) {
             wrapper.eq("level",level);
         }
         if(!StringUtils.isEmpty(begin)) {
@@ -84,42 +123,43 @@ public class EduTeacherController {
             wrapper.le("gmt_create",end);
         }
 
+        //排序
+        wrapper.orderByDesc("gmt_create");
+
         //调用方法实现条件查询分页
-        eduTeacherService.page(pageTeacher,wrapper);
-        Integer count = Math.toIntExact(pageTeacher.getTotal());//总记录数
+        teacherService.page(pageTeacher,wrapper);
+
+        long total = pageTeacher.getTotal();//总记录数
         List<EduTeacher> records = pageTeacher.getRecords(); //数据list集合
-        return ResultVOUtil.success(records,count);
+        return R.ok().data("total",total).data("rows",records);
     }
 
-
-    @PostMapping("add")
-    public ResultVO addTeacher(@RequestBody EduTeacher eduTeacher){
-        boolean save = eduTeacherService.save(eduTeacher);
-        if (save){
-            return ResultVOUtil.success();
-        }else {
-            return ResultVOUtil.error("添加失败");
+    //添加讲师接口的方法
+    @PostMapping("addTeacher")
+    public R addTeacher(@RequestBody EduTeacher eduTeacher) {
+        boolean save = teacherService.save(eduTeacher);
+        if(save) {
+            return R.ok();
+        } else {
+            return R.error();
         }
     }
 
-    @GetMapping("get/{id}")
-    public ResultVO getTeacher(@PathVariable String id){
-        EduTeacher eduTeacher = eduTeacherService.getById(id);
-        if (eduTeacher != null){
-            return ResultVOUtil.success(eduTeacher);
-        }else {
-            return ResultVOUtil.error("查询不到信息");
-        }
+    //根据讲师id进行查询
+    @GetMapping("getTeacher/{id}")
+    public R getTeacher(@PathVariable String id) {
+        EduTeacher eduTeacher = teacherService.getById(id);
+        return R.ok().data("teacher",eduTeacher);
     }
 
-    @PutMapping("update")
-    public ResultVO updateTeacher(@RequestBody EduTeacher eduTeacher){
-        boolean flag = eduTeacherService.updateById(eduTeacher);
-        if (flag){
-            return ResultVOUtil.success();
-        }else {
-            return ResultVOUtil.error("修改失败");
+    //讲师修改功能
+    @PostMapping("updateTeacher")
+    public R updateTeacher(@RequestBody EduTeacher eduTeacher) {
+        boolean flag = teacherService.updateById(eduTeacher);
+        if(flag) {
+            return R.ok();
+        } else {
+            return R.error();
         }
     }
 }
-

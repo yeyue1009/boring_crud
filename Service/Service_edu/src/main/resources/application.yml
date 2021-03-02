@@ -1,7 +1,0 @@
-spring:
-  application:
-    name: Service_edu
-
-profiles:
-    active: dev
-
